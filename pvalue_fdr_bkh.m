@@ -1,19 +1,21 @@
-function [ output] = pvalue_fdr_bkh(data, class, P_thres, FDR_value,FDR_thres, Q_thres, box_plot_op, design_labels)
-% "[ output] = pvalue_fdr_bkh(data, class, P_thres, FDR_value,FDR_thres, Q_thres);
+function [ output] = pvalue_fdr_bkh(varargin)
+% "[ output] = pvalue_fdr_bkh(data, class, P_thres, FDR_value,FDR_thres, Q_thres, box_plot_op, design_labels,box_type,var_label);
 %
 %"pvalue_fdr_bkh" computes ANOVA, mafdr, and fdr and returns P values, FDR Corrected P, FDR, and Q values 
 % 
 % INPUTS:
-% data = data (double) e.g. X(Samples, Variables)
-% class = class for ANOVA e.g. [1 1 1 2 2 2 ... N N N]
+% (1) data = data (double) e.g. X(Samples, Variables)
+% (2) class = class for ANOVA e.g. [1 1 1 2 2 2 ... N N N]
 %
 % OPTIONAL INPUTS:
-% P_thres = Threshold for P-value (default = 0.05) 
-% FDR_value = Threshold for Fasle Discovery Rate in (%) e.g 0.1=10%, (default = 0.1) 
-% FDR_thres = Threshold for FDR corrected P-value (default = 0.05) 
-% Q_thres = = Threshold for Q ( measures of hypothesis testing error for each observation in PValues) (default = 0.05) 
-% box_plot_op = If 1 box plots will be plotted for only Significant mets, If 2 for all, If 0 (zero) none
-% design_labels = name of the class (character array), e.g. 'treatment'
+% (3) P_thres = Threshold for P-value (default = 0.05) 
+% (4) FDR_value = Threshold for Fasle Discovery Rate in (%) e.g 0.1=10%, (default = 0.1) 
+% (5) FDR_thres = Threshold for FDR corrected P-value (default = 0.05) 
+% (6) Q_thres = = Threshold for Q ( measures of hypothesis testing error for each observation in PValues) (default = 0.05) 
+% (7) box_plot_op = If 1 box plots will be plotted for only Significant mets, If 2 for all, If 0 (zero) none
+% (8) design_labels = name of the class (character array), e.g. 'treatment'
+% (9) var_label=varargin{9};
+% (10) box_type = if 'bekzod' then Normal scatter-box style plot, else MATLAB's default boxplot will be used
 %
 % OUTPUTS:
 % output - structure, which contains below items
@@ -36,16 +38,24 @@ function [ output] = pvalue_fdr_bkh(data, class, P_thres, FDR_value,FDR_thres, Q
 % % http://food.ku.dk/english/staff/?pure=en/persons/388946
 % % https://scholar.google.com/citations?user=vhBBNdUAAAAJ&hl=en
 
-%% Check Inputs
+%% Get Inputs
 
-if nargin<3; P_thres=0.05; else P_thres=P_thres; end
-if nargin < 4;  FDR_value=0.1;  else FDR_value=FDR_value; end
-if nargin < 5;  FDR_thres=0.05;  else FDR_thres=FDR_thres; end
-if nargin < 6;  Q_thres=0.05;  else Q_thres=Q_thres; end
-if nargin < 7;  box_plot_op=0;  else box_plot_op=box_plot_op; end
-if nargin < 8;  design_labels='NoDesign';  else design_labels=design_labels; end
+% Get INputs:
+data=varargin{1};
+class=varargin{2};
 
-
+if nargin<3 || isempty(varargin{3}); P_thres=0.05; else P_thres=varargin{3}; end
+if nargin < 4 || isempty(varargin{4});  FDR_value=0.1;  else FDR_value=varargin{4}; end
+if nargin < 5 || isempty(varargin{5});  FDR_thres=0.05;  else FDR_thres=varargin{5}; end
+if nargin < 6 || isempty(varargin{6});  Q_thres=0.05;  else Q_thres=varargin{6}; end
+if nargin < 7 || isempty(varargin{7});  box_plot_op=0;  else box_plot_op=varargin{7}; end
+if nargin < 8 || isempty(varargin{8});  design_labels='NoDesign';  else design_labels=varargin{8}; end
+if length(varargin)<9 || isempty(varargin{9})
+    var_label=num2str([1:size(data,2)]');
+else
+    var_label=varargin{9};
+end
+if nargin < 10 || isempty(varargin{10});  box_type='bekzod';  else box_type=varargin{10}; end
 
 
 
@@ -156,8 +166,8 @@ x=cat(1,FDR2, q2, padj2);
   legend({['FDR: <=' num2str(FDR_value) '% (' num2str((size(find(FDR2<=FDR_value),2))*100/size(FDR2,2)) '%)' ]...
       ['Q: <=' num2str(Q_thres) ' (' num2str((size(find(q2<=Q_thres),2))*100/size(q2,2)) '%)' ]...
       ['P (FDR corrected): <=' num2str(FDR_thres) ' (' num2str((size(find(padj2<=FDR_thres),2))*100/size(padj2,2)) '%)' ]...
-      },'Location','northwest', 'BOX','OFF','FontSize',fz-1);
- title([ 'Significant P - values = ' num2str(size(padj2,2)) ], 'FontSize',fz); hold on; line(pvalues1, ones(1,length(pvalues1))-(1-FDR_thres)); 
+      },'Location','northwest', 'BOX','OFF','FontSize',fz+1);
+ title([ 'Significant P - values = ' num2str(size(padj2,2)) ], 'FontSize',fz); hold on; line(pvalues1, ones(1,length(pvalues1))-(1-FDR_thres)); not_so_tight;
   
 %%  Significant P (FDR correcred) - Values
 % Estimate False Discovery Rate (FDR) and  measures of hypothesis testing error for each P-Values (q)
@@ -176,13 +186,13 @@ x=cat(1,FDR3, q3, padj3);
   legend({['FDR: <=' num2str(FDR_value) '% (' num2str((size(find(FDR3<=FDR_value),2))*100/size(FDR3,2)) '%)' ]...
       ['Q: <=' num2str(Q_thres) ' (' num2str((size(find(q3<=Q_thres),2))*100/size(q3,2)) '%)' ]...
       ['P (FDR corrected): <=' num2str(FDR_thres) ' (' num2str((size(find(padj3<=FDR_thres),2))*100/size(padj3,2)) '%)' ]...
-      },'Location','northwest', 'BOX','OFF','FontSize',fz-1);
- title([ 'Significant P (FDR corrected) - values = ' num2str(size(padj3,2)) ], 'FontSize',fz);   hold on; line(pvalues2, ones(1,length(pvalues2))-(1-FDR_thres)); 
+      },'Location','northwest', 'BOX','OFF','FontSize',fz+1);
+ title([ 'Significant P (FDR corrected) - values = ' num2str(size(padj3,2)) ], 'FontSize',fz);   hold on; line(pvalues2, ones(1,length(pvalues2))-(1-FDR_thres)); not_so_tight;
 else
      subplot(1,3,3); 
       plot(1,1,'k.','MarkerSize',24);    
       ww=['Zero Sig.Vars. with (FDR corr.) P-value of <= ' num2str(FDR_thres) ];
-      title(ww, 'FontSize',fz);   hold on; line(pvalues2, ones(1,length(pvalues2))-(1-FDR_thres)); 
+      title(ww, 'FontSize',fz);   hold on; line(pvalues2, ones(1,length(pvalues2))-(1-FDR_thres)); not_so_tight;
 end
 
 % print( 'FDR Corrected P values','-dpng','-r0');
@@ -199,8 +209,8 @@ x=cat(1,FDR1, q, padj);  col={'bs','go','m^','rd','k*'};
   legend({['FDR: <=' num2str(FDR_value) '% (' num2str((size(find(FDR1<=FDR_value),2))*100/size(FDR1,2)) '%)' ]...
       ['Q: <=' num2str(Q_thres) ' (' num2str((size(find(q<=Q_thres),2))*100/size(q,2)) '%)' ]...
       ['P (FDR corrected): <=' num2str(FDR_thres) ' (' num2str((size(find(padj<=FDR_thres),2))*100/size(padj,2)) '%)' ]...
-      },'Location','northwest', 'BOX','OFF','FontSize',fz-1); 
-  title([ 'Total P - values = ' num2str(size(P,2)) ], 'FontSize',fz); hold on; line(pvalues, ones(1,length(pvalues))-(1-FDR_thres)); 
+      },'Location','northwest', 'BOX','OFF','FontSize',fz+1); 
+  title([ 'Total P - values = ' num2str(size(P,2)) ], 'FontSize',fz); hold on; line(pvalues, ones(1,length(pvalues))-(1-FDR_thres)); not_so_tight;
 
 %    print( 'FDR Corrected P values','-dpdf','-r0');
 
@@ -225,7 +235,7 @@ if box_plot_op==1
         for f_met=1:length(anov.Index_of_P_FDRcorrected)
             figure('units','normalized','outerposition',[0 0 1 1]);
             met=anov.Index_of_P_FDRcorrected(f_met);
-            met_name=['MetName-' num2str(f_met)];
+            met_name=['MetName-' num2str(f_met) ': ' var_label(met,:)];
             p=['p-val = ' num2str(round(anov.P_FDRcorrected(f_met),5))];
             ef=['EffectSize = ' num2str(round(anov.Effect_size(met),2)) ' %'];
             try
@@ -245,8 +255,11 @@ if box_plot_op==1
                     data1=data1(s2,:);
                 end;
                 
-                 boxplot(data1,class1);
-%                  box_plot_bkh(data1,class1);
+                if strcmp(box_type,'bekzod')
+                    box_plot_bkh(data1,class1);
+                else
+                    boxplot(data1,class1);
+                end;
                 
                 legend({des, ['Mean-Met#' num2str(met)], met_name},'Location','northwest','BOX','OFF');
                 title([ p ' / ' ef]);
@@ -255,25 +268,25 @@ if box_plot_op==1
                 set(gcf,'color','w');
                 grid('on');
                 print([des '-Met' num2str(met) '-BoxPlot'], '-dpng','-r0');
-                % close all
+                close all
             catch
                 plot(1,1);
             end
         end
     end
     % end
-end
+
 
         
-        
-if box_plot_op==2
+
+elseif box_plot_op==2
     
     % for f_des=1:length(ANOVA_results);
     anov=output;
     des=design_labels;
     for met=1:size(data,2)
         figure('units','normalized','outerposition',[0 0 1 1]);
-        met_name=['MetName-' num2str(met)];
+        met_name=['MetName-' num2str(met) ': ' var_label(met,:)];
         p=['p-val = ' num2str(round(anov.details.P_values_After_FDR_correction(met),5))];
         ef=['EffectSize = ' num2str(round(anov.Effect_size(met),2)) ' %'];
         try
@@ -292,8 +305,11 @@ if box_plot_op==2
                 data1=data1(s2,:);
             end
             
-            boxplot(data1,class1);
-            %box_plot_bkh(data1,class1);
+            if strcmp(box_type,'bekzod')
+                box_plot_bkh(data1,class1);
+            else
+                boxplot(data1,class1);
+            end;
             
             legend({des, ['Mean-Met#' num2str(met)], met_name},'Location','northwest','BOX','OFF');
             title([ p ' / ' ef]);
@@ -302,7 +318,7 @@ if box_plot_op==2
             set(gcf,'color','w');
             grid('on');
             print([des '-Met' num2str(met) '-BoxPlot' ], '-dpng','-r0');
-            % close all
+            close all
         catch
             plot(1,1);
         end
